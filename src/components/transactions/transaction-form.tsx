@@ -29,14 +29,12 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Sparkles } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Category, Transaction } from '@/lib/data';
 import { getIconForCategory } from '@/lib/icons.tsx';
 import { Textarea } from '../ui/textarea';
-import { suggestTransactionCategory } from '@/ai/flows/suggest-transaction-category';
-import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   type: z.enum(['income', 'expense']),
@@ -57,8 +55,6 @@ export function TransactionForm({
   onSubmit,
   defaultValues,
 }: TransactionFormProps) {
-  const { toast } = useToast();
-  const [isSuggesting, setIsSuggesting] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,37 +66,6 @@ export function TransactionForm({
       description: defaultValues?.description || '',
     },
   });
-
-  const handleSuggestCategory = async () => {
-    const description = form.getValues('description');
-    if (description.length < 5 || isSuggesting) return;
-
-    setIsSuggesting(true);
-    try {
-      const { categoryId } = await suggestTransactionCategory({
-        description,
-        categories,
-      });
-
-      if (categoryId && categories.some(c => c.id === categoryId)) {
-        form.setValue('categoryId', categoryId, { shouldValidate: true });
-        toast({
-          title: 'Categoria Sugerida!',
-          description: (
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span>Nossa IA sugeriu uma categoria para você.</span>
-            </div>
-          ),
-        });
-      }
-    } catch (error) {
-      console.error('Falha ao sugerir categoria:', error);
-      // Não exibe toast de erro para não interromper o usuário
-    } finally {
-      setIsSuggesting(false);
-    }
-  };
 
   const handleUpdateWithDateConversion = (values: z.infer<typeof formSchema>) => {
     const dataToSubmit = {
@@ -211,7 +176,6 @@ export function TransactionForm({
                 <Textarea
                   placeholder="ex: Café com amigos"
                   {...field}
-                  onBlur={handleSuggestCategory}
                 />
               </FormControl>
               <FormMessage />
@@ -225,7 +189,6 @@ export function TransactionForm({
             <FormItem>
               <FormLabel className="flex items-center">
                 Categoria
-                {isSuggesting && <Sparkles className="ml-2 h-4 w-4 animate-pulse text-primary" />}
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
