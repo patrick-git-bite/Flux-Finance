@@ -89,13 +89,16 @@ export default function DashboardPage() {
   const [isSeeding, setIsSeeding] = React.useState(false);
   const [isClearing, setIsClearing] = React.useState(false);
   const [showSeedButton, setShowSeedButton] = React.useState(false);
-
+  const [isDark, setIsDark] = React.useState(false);
   const { theme } = useTheme();
-  const isDark =
-    theme === 'dark' ||
-    (theme === 'system' &&
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  React.useEffect(() => {
+    const checkIsDark =
+      theme === 'dark' ||
+      (theme === 'system' &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDark(checkIsDark);
+  }, [theme]);
 
 
   React.useEffect(() => {
