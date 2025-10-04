@@ -1,7 +1,8 @@
-<div align="center">
-  <img src="/public/logo.png" alt="Flux Finance Banner"/>
-</div>
 
+      <div align="center">
+        <img src="https://i.imgur.com/g9n03p7.png" alt="Flux Finance Banner"/>
+      </div>
+      
 # Flux Finance
 
 **[English Below]**
@@ -12,47 +13,39 @@ Flux Finance é um painel de finanças pessoais moderno e intuitivo, construído
 
 ## ✨ Funcionalidades Principais
 
-- **Painel de Controle Intuitivo**: Resumo visual do saldo, receitas e despesas mensais. Gráficos interativos mostram a evolução financeira e a distribuição de gastos por categoria.
-- **Gerenciamento de Transações**: Sistema completo para adicionar, editar, excluir e filtrar transações.
-- **Painel do Mercado (Educacional)**: Uma página com indicadores do mercado brasileiro e um simulador de investimentos para fins didáticos.
-- **Autenticação Segura**: Sistema completo de login e cadastro de usuários com Firebase Authentication.
-- **Banco de Dados Individual**: Cada usuário tem seus dados armazenados de forma segura e separada no Firestore.
+- **Dashboard Interativo:** Visualize seu saldo, receitas, despesas e saúde financeira em um só lugar.
+- **Registro de Transações:** Adicione, edite e exclua transações de forma rápida e fácil.
+- **Categorização Automática:** As transações são categorizadas para facilitar a análise.
+- **Insights Financeiros:** Receba avisos, oportunidades de melhoria e ideias de investimento com base em seus dados.
+- **Análise de Despesas:** Gráficos detalhados sobre a distribuição de suas despesas.
+- **Mercado (Educacional):** Explore informações sobre diferentes plataformas e produtos de investimento.
+- **Autenticação Segura:** Login e cadastro com o Firebase Authentication.
 
-## 💡 Painel do Mercado — Visão Educacional
+## 🛠️ Tecnologias Utilizadas
 
-Uma das funcionalidades de destaque do Flux Finance é o **Painel do Mercado**. Esta seção foi criada com um propósito puramente educacional, para familiarizar os usuários com conceitos básicos do mercado financeiro brasileiro.
+- **Next.js:** Framework React para produção.
+- **Firebase:** Plataforma para desenvolvimento de aplicativos (Authentication, Firestore, App Hosting).
+- **TypeScript:** Superset do JavaScript que adiciona tipagem estática.
+- **Tailwind CSS:** Framework CSS utility-first para estilização rápida.
+- **Shadcn/ui:** Componentes de UI reusáveis e acessíveis.
+- **Recharts:** Biblioteca de gráficos para React.
+- **Date-fns:** Manipulação de datas em JavaScript.
 
-- **Indicadores Chave**: Apresenta gráficos com dados (estáticos) de indicadores importantes como a **Taxa Selic**, **IPCA (Inflação)** e **CDI**.
-- **Simulador de Rendimentos**: Uma ferramenta interativa que permite simular o rendimento bruto do saldo atual do usuário ou de aportes mensais em diferentes tipos de investimentos fictícios, como Tesouro Selic, CDB, LCI/LCA e Tesouro IPCA+.
-- **Plataformas de Investimento**: Para completar a jornada educacional, a página apresenta um carrossel com informações sobre corretoras e plataformas reais do mercado, como **XP**, **Rico** e **Grão (Grupo Primo)**. O conteúdo exibido é apenas para fins de demonstração.
+## 🚀 Começando
 
-**Importante**: Todos os dados nesta seção são estáticos e não representam o mercado em tempo real. A funcionalidade não deve ser considerada como uma recomendação de investimento.
-
-## 🚀 Stack de Tecnologia
-
-- **Framework**: [Next.js](https://nextjs.org/) (App Router)
-- **Hospedagem e Backend**: [Firebase](https://firebase.google.com/) (Authentication, Firestore)
-- **UI Components**: [Shadcn/UI](https://ui.shadcn.com/)
-- **Estilização**: [Tailwind CSS](https://tailwindcss.com/)
-- **Gráficos**: [Recharts](https://recharts.org/)
-- **Validação de Formulários**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
-
-## ⚙️ Configuração e Execução Local
-
-Siga os passos abaixo para executar o projeto em seu ambiente de desenvolvimento.
+Siga estas instruções para obter uma cópia do projeto em execução na sua máquina local para desenvolvimento e testes.
 
 ### Pré-requisitos
 
-- O projeto requer [Node.js](https://nodejs.org/) (versão 18.x ou superior).
-- Um gerenciador de pacotes, como [npm](https://www.npmjs.com/), [yarn](https://yarnpkg.com/), ou [pnpm](https://pnpm.io/).
-- Uma conta gratuita no [Firebase](https://firebase.google.com/) para configurar o backend.
+- [Node.js](https://nodejs.org/) (versão 20.x ou superior)
+- [Firebase Account](https://firebase.google.com/)
 
 ### Instalação
 
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/seu-usuario/flux-finance.git
-   cd flux-finance
+   git clone https://github.com/patrick-git-bite/Flux-Finance.git
+   cd Flux-Finance
    ```
 
 2. **Instale as dependências:**
@@ -80,15 +73,38 @@ Siga os passos abaixo para executar o projeto em seu ambiente de desenvolvimento
 4. **Execute o servidor de desenvolvimento:**
    ```bash
    npm run dev
+   # ou
+   yarn dev
+   # ou
+   pnpm dev
    ```
 
-5. **Abra o navegador:**
-   Acesse [http://localhost:3000](http://localhost:3000) para ver a aplicação em execução.
+   Abra [http://localhost:3000](http://localhost:3000) no seu navegador para ver o resultado.
 
 ---
 
-## 🌐 English
+##  English
 
-Flux Finance is a modern and intuitive personal finance dashboard built with Next.js and Firebase. It allows users to manage their transactions, visualize their spending habits, and explore educational investment scenarios.
+# Flux Finance
 
-Key features and tech stack are the same as listed above. Follow the setup steps to run it locally, using the Firebase credentials from your own project.
+Flux Finance is a modern and intuitive personal finance dashboard built with Next.js and Firebase. It allows users to manage their transactions, visualize their spending habits, and explore investment scenarios in an educational way.
+
+### Key Features
+
+- **Interactive Dashboard:** View your balance, income, expenses, and financial health in one place.
+- **Transaction Logging:** Add, edit, and delete transactions quickly and easily.
+- **Automatic Categorization:** Transactions are categorized for easy analysis.
+- **Financial Insights:** Receive warnings, improvement opportunities, and investment ideas based on your data.
+- **Expense Analysis:** Detailed charts on the distribution of your expenses.
+- **Market (Educational):** Explore information about different investment platforms and products.
+- **Secure Authentication:** Login and registration with Firebase Authentication.
+
+### Technologies Used
+
+- **Next.js:** React framework for production.
+- **Firebase:** Application development platform (Authentication, Firestore, App Hosting).
+- **TypeScript:** Superset of JavaScript that adds static typing.
+- **Tailwind CSS:** Utility-first CSS framework for rapid styling.
+- **Shadcn/ui:** Reusable and accessible UI components.
+- **Recharts:** Charting library for React.
+- **Date-fns:** JavaScript date manipulation.

@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": ".next/static",
+    "public": "public",
     "rewrites": [
       {
         "source": "**",
@@ -12,5 +12,11 @@
       "**/.*",
       "**/node_modules/**"
     ]
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "runtime": "nodejs18"
+    }
+  ]
 }
