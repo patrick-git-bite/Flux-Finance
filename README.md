@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="/public/logo.png" alt="Flux Finance Banner"/>
+</div>
+
 # Flux Finance
 
 **[English Below]**
@@ -10,9 +14,19 @@ Flux Finance é um painel de finanças pessoais moderno e intuitivo, construído
 
 - **Painel de Controle Intuitivo**: Resumo visual do saldo, receitas e despesas mensais. Gráficos interativos mostram a evolução financeira e a distribuição de gastos por categoria.
 - **Gerenciamento de Transações**: Sistema completo para adicionar, editar, excluir e filtrar transações.
-- **Simulador de Mercado**: Uma página educacional com indicadores econômicos do Brasil (SELIC, IPCA, CDI) e um simulador interativo para projetar rendimentos com base no saldo atual ou em aportes mensais.
+- **Painel do Mercado (Educacional)**: Uma página com indicadores do mercado brasileiro e um simulador de investimentos para fins didáticos.
 - **Autenticação Segura**: Sistema completo de login e cadastro de usuários com Firebase Authentication.
 - **Banco de Dados Individual**: Cada usuário tem seus dados armazenados de forma segura e separada no Firestore.
+
+## 💡 Painel do Mercado — Visão Educacional
+
+Uma das funcionalidades de destaque do Flux Finance é o **Painel do Mercado**. Esta seção foi criada com um propósito puramente educacional, para familiarizar os usuários com conceitos básicos do mercado financeiro brasileiro.
+
+- **Indicadores Chave**: Apresenta gráficos com dados (estáticos) de indicadores importantes como a **Taxa Selic**, **IPCA (Inflação)** e **CDI**.
+- **Simulador de Rendimentos**: Uma ferramenta interativa que permite simular o rendimento bruto do saldo atual do usuário ou de aportes mensais em diferentes tipos de investimentos fictícios, como Tesouro Selic, CDB, LCI/LCA e Tesouro IPCA+.
+- **Plataformas de Investimento**: Para completar a jornada educacional, a página apresenta um carrossel com informações sobre corretoras e plataformas reais do mercado, como **XP**, **Rico** e **Grão (Grupo Primo)**. O conteúdo exibido é apenas para fins de demonstração.
+
+**Importante**: Todos os dados nesta seção são estáticos e não representam o mercado em tempo real. A funcionalidade não deve ser considerada como uma recomendação de investimento.
 
 ## 🚀 Stack de Tecnologia
 
@@ -29,102 +43,52 @@ Siga os passos abaixo para executar o projeto em seu ambiente de desenvolvimento
 
 ### Pré-requisitos
 
-- [Node.js](https://nodejs.org/) (v18 ou superior)
-- [Git](https://git-scm.com/)
+- O projeto requer [Node.js](https://nodejs.org/) (versão 18.x ou superior).
+- Um gerenciador de pacotes, como [npm](https://www.npmjs.com/), [yarn](https://yarnpkg.com/), ou [pnpm](https://pnpm.io/).
+- Uma conta gratuita no [Firebase](https://firebase.google.com/) para configurar o backend.
 
-### 1. Clone o Repositório
+### Instalação
 
-```bash
-git clone https://github.com/patrick-git-bite/Flux-Finance.git
-cd Flux-Finance
-```
+1. **Clone o repositório:**
+   ```bash
+   git clone https://github.com/seu-usuario/flux-finance.git
+   cd flux-finance
+   ```
 
-### 2. Instale as Dependências
+2. **Instale as dependências:**
+   ```bash
+   npm install
+   # ou
+   yarn install
+   # ou
+   pnpm install
+   ```
 
-```bash
-npm install
-```
+3. **Configure as variáveis de ambiente:**
+   - Crie um arquivo `.env.local` na raiz do projeto.
+   - Adicione as credenciais do seu projeto Firebase a este arquivo. Você pode encontrar essas credenciais no console do Firebase, nas configurações do seu projeto (> Configurações do Projeto > Geral > Seus apps > App da Web > SDK do Firebase).
 
-### 3. Configure o Firebase
+   ```env
+   NEXT_PUBLIC_FIREBASE_API_KEY=sua_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=seu_auth_domain
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=seu_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=seu_storage_bucket
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=seu_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=seu_app_id
+   ```
 
-O projeto precisa se conectar a um projeto Firebase para funcionar.
+4. **Execute o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
 
-1.  Acesse o [console do Firebase](https://console.firebase.google.com/).
-2.  Crie um novo projeto ou use um existente.
-3.  Adicione um **Aplicativo da Web** (`</>`) ao seu projeto.
-4.  Copie o objeto de configuração `firebaseConfig`.
-5.  Cole o objeto que você copiou no arquivo `src/lib/firebase.ts`, substituindo o conteúdo existente.
-
-### 4. Execute o Projeto
-
-```bash
-npm run dev
-```
-
-Abra [http://localhost:3000](http://localhost:3000) em seu navegador para ver o aplicativo em ação.
+5. **Abra o navegador:**
+   Acesse [http://localhost:3000](http://localhost:3000) para ver a aplicação em execução.
 
 ---
-<br>
 
-# Flux Finance (English)
+## 🌐 English
 
-Flux Finance is a modern and intuitive personal finance dashboard built with Next.js and Firebase. It allows users to manage their transactions, visualize their spending habits, and explore investment scenarios in an educational way.
+Flux Finance is a modern and intuitive personal finance dashboard built with Next.js and Firebase. It allows users to manage their transactions, visualize their spending habits, and explore educational investment scenarios.
 
----
-
-## ✨ Key Features
-
-- **Intuitive Dashboard**: Visual summary of current balance, monthly income, and expenses. Interactive charts show financial evolution and spending distribution by category.
-- **Transaction Management**: A complete system to add, edit, delete, and filter transactions.
-- **Market Simulator**: An educational page with economic indicators from Brazil (SELIC, IPCA, CDI) and an interactive simulator to project returns based on the current balance or monthly contributions.
-- **Secure Authentication**: Complete user login and registration system with Firebase Authentication.
-- **Individual Database**: Each user's data is stored securely and separately in Firestore.
-
-## 🚀 Tech Stack
-
-- **Framework**: [Next.js](https://nextjs.org/) (App Router)
-- **Hosting & Backend**: [Firebase](https://firebase.google.com/) (Authentication, Firestore)
-- **UI Components**: [Shadcn/UI](https://ui.shadcn.com/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Charts**: [Recharts](https://recharts.org/)
-- **Form Validation**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
-
-## ⚙️ Setup and Local Execution
-
-Follow the steps below to run the project in your development environment.
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [Git](https://git-scm.com/)
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/patrick-git-bite/Flux-Finance.git
-cd Flux-Finance
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure Firebase
-
-The project needs to connect to a Firebase project to work.
-
-1.  Go to the [Firebase console](https://console.firebase.google.com/).
-2.  Create a new project or use an existing one.
-3.  Add a **Web App** (`</>`) to your project.
-4.  Copy the `firebaseConfig` configuration object.
-5.  Paste the copied object into the `src/lib/firebase.ts` file, replacing the existing content.
-
-### 4. Run the Project
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application in action.
+Key features and tech stack are the same as listed above. Follow the setup steps to run it locally, using the Firebase credentials from your own project.

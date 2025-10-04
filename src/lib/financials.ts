@@ -1,242 +1,279 @@
-
-
 import { Transaction, Category } from './data';
-import { format, startOfMonth, getMonth, subMonths } from 'date-fns';
-import { formatCurrency } from './utils';
+import { subMonths, format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isValid } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-const getDateFromTransaction = (date: string | { toDate: () => Date }): Date => {
-  if (typeof date === 'object' && date && date.toDate) {
-    return date.toDate();
+// --- CONSTANTS --- //
+const INSIGHTS_THRESHOLDS = {
+  HIGH_EXPENSE_RATIO: 0.8,
+  HIGH_CATEGORY_EXPENSE_RATIO: 0.3, 
+  MINIMUM_SAVINGS_FOR_OPPORTUNITY: 250, 
+};
+const HEALTH_SCORE_BOUNDARIES = [
+  { threshold: 0.5, score: 100, description: 'Excelente', emoji: '🚀' },
+  { threshold: 0.2, score: 80, description: 'Muito Boa', emoji: '😄' },
+  { threshold: 0.1, score: 60, description: 'Boa', emoji: '😊' },
+  { threshold: 0.0, score: 40, description: 'Regular', emoji: '😐' },
+  { threshold: -0.1, score: 20, description: 'Atenção', emoji: '😟' },
+  { threshold: -Infinity, score: 10, description: 'Crítica', emoji: '🚨' },
+];
+const DEFAULT_CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+// --- HELPERS --- //
+
+function getDate(dateInput: any): Date | null {
+  if (!dateInput) return null;
+
+  let date: Date;
+  if (typeof dateInput === 'object' && 'toDate' in dateInput) {
+    date = dateInput.toDate();
+  } else if (typeof dateInput === 'string') {
+    date = parseISO(dateInput);
+  } else {
+    date = new Date(dateInput);
   }
-  return new Date(date as any);
+
+  return isValid(date) ? date : null;
 }
 
-export function calculateMetrics(transactions: Transaction[]) {
-  const now = new Date();
-  const currentMonthStart = startOfMonth(now);
-  const lastMonthStart = startOfMonth(subMonths(now, 1));
-  const lastMonthEnd = startOfMonth(now);
+// --- CORE METRICS --- //
 
-  const balance = transactions.reduce((acc, t) => {
-    return t.type === 'income' ? acc + t.amount : acc - t.amount;
-  }, 0);
+export function calculateMetrics(transactions: Transaction[], referenceDate: Date) {
+  const emptyMetrics = { balance: 0, monthlyIncome: 0, monthlyExpenses: 0, previousMonthlyIncome: 0, previousMonthlyExpenses: 0 };
+  if (!isValid(referenceDate)) return emptyMetrics;
 
-  const monthlyIncome = transactions
-    .filter((t) => {
-      const tDate = getDateFromTransaction(t.date);
-      return t.type === 'income' && tDate >= currentMonthStart;
-    })
-    .reduce((acc, t) => acc + t.amount, 0);
+  const balance = transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0);
+  if (transactions.length === 0) return { ...emptyMetrics, balance };
 
-  const monthlyExpenses = transactions
-    .filter((t) => {
-      const tDate = getDateFromTransaction(t.date);
-      return t.type === 'expense' && tDate >= currentMonthStart;
-    })
-    .reduce((acc, t) => acc + t.amount, 0);
+  const thisMonthInterval = { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
+  const lastMonthReference = subMonths(referenceDate, 1);
+  const lastMonthInterval = { start: startOfMonth(lastMonthReference), end: endOfMonth(lastMonthReference) };
 
-  const lastMonthExpenses = transactions
-    .filter((t) => {
-      const tDate = getDateFromTransaction(t.date);
-      return (
-        t.type === 'expense' &&
-        tDate >= lastMonthStart &&
-        tDate < lastMonthEnd
-      );
-    })
-    .reduce((acc, t) => acc + t.amount, 0);
+  const thisMonthTransactions = transactions.filter(t => {
+      const date = getDate(t.date);
+      return date && isWithinInterval(date, thisMonthInterval);
+  });
+  const lastMonthTransactions = transactions.filter(t => {
+      const date = getDate(t.date);
+      return date && isWithinInterval(date, lastMonthInterval);
+  });
 
-  const expensesExceededIncome = monthlyExpenses > monthlyIncome && monthlyIncome > 0;
-  const expensesExceededLastMonth = monthlyExpenses > lastMonthExpenses && lastMonthExpenses > 0;
-
-  return {
-    balance,
-    monthlyIncome,
-    monthlyExpenses,
-    lastMonthExpenses,
-    expensesExceededIncome,
-    expensesExceededLastMonth,
-  };
+  const monthlyIncome = thisMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const monthlyExpenses = thisMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const previousMonthlyIncome = lastMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const previousMonthlyExpenses = lastMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  
+  return { balance, monthlyIncome, monthlyExpenses, previousMonthlyIncome, previousMonthlyExpenses };
 }
 
-export function getMonthlyChartData(transactions: Transaction[]) {
-  const monthlyData: { [key: string]: { month: string, income: number, expenses: number } } = {};
+// --- CHART DATA GENERATION --- //
+
+export function getMonthlyChartData(transactions: Transaction[], referenceDate: Date) {
+  if (!isValid(referenceDate)) return [];
+
+  const monthlyData = new Map<string, { income: number; fixed: number; variable: number }>();
+
+  for (let i = 5; i >= 0; i--) {
+    const date = subMonths(referenceDate, i);
+    const key = format(date, 'yyyy-MM');
+    monthlyData.set(key, { income: 0, fixed: 0, variable: 0 });
+  }
 
   transactions.forEach(t => {
-    const tDate = getDateFromTransaction(t.date);
-    const month = format(tDate, 'MMM');
-    if (!monthlyData[month]) {
-      monthlyData[month] = { month, income: 0, expenses: 0 };
-    }
-    if (t.type === 'income') {
-      monthlyData[month].income += t.amount;
-    } else {
-      monthlyData[month].expenses += t.amount;
+    const date = getDate(t.date);
+    if (!date) return;
+
+    const key = format(date, 'yyyy-MM');
+    if (monthlyData.has(key)) {
+      const currentData = monthlyData.get(key)!;
+      if (t.type === 'income') {
+        currentData.income += t.amount;
+      } else if (t.type === 'expense') {
+        if (t.expenseType === 'fixed') {
+          currentData.fixed += t.amount;
+        } else if (t.expenseType === 'variable') {
+          currentData.variable += t.amount;
+        }
+      }
     }
   });
 
-  return Object.values(monthlyData).sort((a, b) => {
-    const monthA = new Date(Date.parse(a.month +" 1, 2012")).getMonth();
-    const monthB = new Date(Date.parse(b.month +" 1, 2012")).getMonth();
-    return monthA - monthB;
+  return Array.from(monthlyData.entries()).map(([key, data]) => {
+    const monthLabel = format(parseISO(`${key}-01`), 'MMM', { locale: ptBR });
+    return {
+        month: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1),
+        ...data,
+    };
   });
 }
 
-export function getExpenseHistoryChartData(transactions: Transaction[]) {
-  const expenseData: { [key: string]: { month: string, expenses: number } } = {};
-  const sixMonthsAgo = subMonths(new Date(), 5);
-  sixMonthsAgo.setDate(1);
+export function getCategoryDistributionData(transactions: Transaction[], categories: Category[], referenceDate: Date) {
+  if (categories.length === 0 || !isValid(referenceDate)) return [];
 
-  // Initialize last 6 months
-  for (let i = 0; i < 6; i++) {
-    const monthKey = format(subMonths(new Date(), i), 'yyyy-MM');
-    const monthName = format(subMonths(new Date(), i), 'MMM');
-    expenseData[monthKey] = { month: monthName, expenses: 0 };
-  }
+  const monthInterval = { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
+  const thisMonthExpenses = transactions.filter(t => {
+    const date = getDate(t.date);
+    return t.type === 'expense' && date && isWithinInterval(date, monthInterval);
+  });
+
+  if (thisMonthExpenses.length === 0) return [];
+
+  const expenseByCategory = new Map<string, number>();
+  thisMonthExpenses.forEach(t => {
+      expenseByCategory.set(t.categoryId, (expenseByCategory.get(t.categoryId) || 0) + t.amount);
+    });
   
-  transactions
-    .filter(t => t.type === 'expense' && getDateFromTransaction(t.date) >= sixMonthsAgo)
-    .forEach(t => {
-      const tDate = getDateFromTransaction(t.date);
-      const monthKey = format(tDate, 'yyyy-MM');
-      if (expenseData[monthKey]) {
-        expenseData[monthKey].expenses += t.amount;
-      }
+  return Array.from(expenseByCategory.entries()).map(([categoryId, amount], index) => {
+    const category = categories.find(c => c.id === categoryId);
+    return {
+      name: category?.name || 'Outros',
+      value: amount,
+      fill: category?.color || DEFAULT_CHART_COLORS[index % DEFAULT_CHART_COLORS.length], 
+    };
+  }).sort((a, b) => b.value - a.value);
+}
+
+export function getExpenseBreakdownData(transactions: Transaction[], referenceDate: Date) {
+  if (transactions.length === 0 || !isValid(referenceDate)) return [];
+
+  const monthInterval = { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
+  const thisMonthExpenses = transactions.filter(t => {
+    const date = getDate(t.date);
+    return t.type === 'expense' && date && isWithinInterval(date, monthInterval);
+  });
+
+  if (thisMonthExpenses.length === 0) return [];
+
+  const breakdown = {
+    fixed: 0,
+    variable: 0,
+  };
+
+  thisMonthExpenses.forEach(t => {
+    if (t.expenseType === 'fixed') {
+      breakdown.fixed += t.amount;
+    } else if (t.expenseType === 'variable') {
+      breakdown.variable += t.amount;
+    }
+  });
+  
+  const monthLabel = format(referenceDate, 'MMM', { locale: ptBR });
+  const formattedMonth = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+  return [{
+      month: formattedMonth,
+      fixed: breakdown.fixed,
+      variable: breakdown.variable
+  }];
+}
+
+export function getIncomeSourcesData(transactions: Transaction[], referenceDate: Date) {
+  if (transactions.length === 0 || !isValid(referenceDate)) return [];
+
+  const monthInterval = { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
+  const thisMonthIncomes = transactions.filter(t => {
+    const date = getDate(t.date);
+    return t.type === 'income' && date && isWithinInterval(date, monthInterval);
+  });
+
+  if (thisMonthIncomes.length === 0) return [];
+
+  const incomeBySource = new Map<string, number>();
+  thisMonthIncomes.forEach(t => {
+      const sourceName = t.description || 'Fonte Desconhecida';
+      incomeBySource.set(sourceName, (incomeBySource.get(sourceName) || 0) + t.amount);
+    });
+  
+  return Array.from(incomeBySource.entries()).map(([name, amount], index) => ({
+    name,
+    value: amount,
+    fill: DEFAULT_CHART_COLORS[index % DEFAULT_CHART_COLORS.length],
+  })).sort((a,b) => b.value - a.value);
+}
+
+// --- FINANCIAL INSIGHTS & HEALTH --- //
+
+export interface RuleBasedInsights { warnings: string[]; opportunities: string[]; investmentIdeas: string[]; }
+
+export function generateRuleBasedInsights(transactions: Transaction[], categories: Category[], referenceDate: Date): RuleBasedInsights {
+  const emptyInsights = { warnings: ['Nenhum dado para este mês.'], opportunities: [], investmentIdeas: [] };
+  if (!isValid(referenceDate)) return emptyInsights;
+
+  const monthInterval = { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
+  const thisMonthTransactions = transactions.filter(t => {
+      const date = getDate(t.date);
+      return date && isWithinInterval(date, monthInterval);
+  });
+
+  if (thisMonthTransactions.length === 0) {
+      return { warnings: ['Nenhum dado para este mês. Selecione outro período para ver os insights.'], opportunities: [], investmentIdeas: [] };
+  }
+
+  const totalIncome = thisMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = thisMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  
+  const warnings: string[] = [];
+  const opportunities: string[] = [];
+  const investmentIdeas: string[] = [];
+
+  const expenseRatio = totalIncome > 0 ? totalExpenses / totalIncome : 0;
+  if (expenseRatio > INSIGHTS_THRESHOLDS.HIGH_EXPENSE_RATIO) {
+    warnings.push(`Sua taxa de despesas está alta (${(expenseRatio * 100).toFixed(0)}%) em comparação com sua renda.`);
+  }
+
+  const expenseByCategory: { [key: string]: number } = {};
+  thisMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
+      expenseByCategory[t.categoryId] = (expenseByCategory[t.categoryId] || 0) + t.amount;
     });
 
-  return Object.values(expenseData).reverse();
-}
-
-export function getCategoryChartData(transactions: Transaction[], categories: Category[]) {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-  
-    const categorySpending: { [key: string]: number } = {};
-  
-    transactions
-      .filter(t => {
-        const tDate = getDateFromTransaction(t.date);
-        return t.type === 'expense' &&
-               tDate.getMonth() === currentMonth &&
-               tDate.getFullYear() === currentYear;
-      })
-      .forEach(t => {
-        if (!categorySpending[t.categoryId]) {
-          categorySpending[t.categoryId] = 0;
-        }
-        categorySpending[t.categoryId] += t.amount;
-      });
-  
-    return Object.entries(categorySpending)
-      .map(([categoryId, amount]) => {
-        const category = categories.find(c => c.id === categoryId);
-        return {
-          name: category ? category.name : 'Uncategorized',
-          value: amount,
-        };
-      })
-      .sort((a, b) => b.value - a.value);
+  for (const categoryId in expenseByCategory) {
+    const categoryTotal = expenseByCategory[categoryId];
+    const category = categories.find(c => c.id === categoryId);
+    if (category && totalExpenses > 0 && categoryTotal / totalExpenses > INSIGHTS_THRESHOLDS.HIGH_CATEGORY_EXPENSE_RATIO) {
+      warnings.push(`Gastos elevados na categoria "${category.name}". Considere revisar suas despesas.`);
+    }
   }
 
-export type RuleBasedInsights = {
-    warnings: string[];
-    opportunities: string[];
-    investmentIdeas: string[];
-};
+  const savings = totalIncome - totalExpenses;
+  if (savings > INSIGHTS_THRESHOLDS.MINIMUM_SAVINGS_FOR_OPPORTUNITY) {
+    opportunities.push(`Você economizou ${savings.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}! Ótimo trabalho.`);
+    investmentIdeas.push('Pequenos investimentos regulares em um fundo de índice (ETF) podem ser um bom começo.');
+  } else if (totalIncome > 0 && savings <= 0) {
+    warnings.push('Você gastou mais do que ganhou neste mês. Reavalie seu orçamento.');
+  }
 
-export function generateRuleBasedInsights(transactions: Transaction[], categories: Category[]): RuleBasedInsights {
-    const warnings: string[] = [];
-    const opportunities: string[] = [];
-    const investmentIdeas: string[] = [];
-    
-    const { monthlyExpenses, monthlyIncome, lastMonthExpenses } = calculateMetrics(transactions);
-    const categoryChartData = getCategoryChartData(transactions, categories);
+  investmentIdeas.push('Manter uma boa saúde financeira é a chave para realizar seus sonhos. Estamos de olho para te ajudar com ideias.');
+  if (warnings.length === 0) warnings.push('Nenhum aviso crítico este mês. Continue assim!');
+  if (opportunities.length === 0) opportunities.push('Continue focado em seus objetivos financeiros. Cada pequena economia conta!');
 
-    if (monthlyExpenses > monthlyIncome && monthlyIncome > 0) {
-        warnings.push(`Suas despesas (${formatCurrency(monthlyExpenses)}) ultrapassaram sua renda este mês.`);
+  return { warnings, opportunities, investmentIdeas };
+}
+
+export interface FinancialHealth { score: number; description: string; emoji: string; }
+
+export function calculateFinancialHealthScore(transactions: Transaction[], referenceDate: Date): FinancialHealth {
+    const defaultHealth = { score: 0, description: "Indisponível", emoji: "📊" };
+    if (!isValid(referenceDate)) return defaultHealth;
+
+    const monthInterval = { start: startOfMonth(referenceDate), end: endOfMonth(referenceDate) };
+    const thisMonthTransactions = transactions.filter(t => {
+        const date = getDate(t.date);
+        return date && isWithinInterval(date, monthInterval);
+    });
+
+    const totalIncome = thisMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const totalExpenses = thisMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+    if (totalIncome === 0) {
+        return { score: 0, description: "Sem dados de renda", emoji: "🤔" };
     }
 
-    if (monthlyExpenses > lastMonthExpenses && lastMonthExpenses > 0) {
-        const increase = ((monthlyExpenses - lastMonthExpenses) / lastMonthExpenses) * 100;
-        warnings.push(`Seus gastos aumentaram ${increase.toFixed(0)}% em comparação com o mês passado.`);
-    }
+    const savingsRatio = (totalIncome - totalExpenses) / totalIncome;
 
-    if (categoryChartData.length > 0) {
-        const topCategory = categoryChartData[0];
-        const totalExpenses = categoryChartData.reduce((acc, cat) => acc + cat.value, 0);
-        const topCategoryPercentage = (topCategory.value / totalExpenses) * 100;
-
-        if (topCategoryPercentage > 35) {
-            warnings.push(`${topCategoryPercentage.toFixed(0)}% dos seus gastos mensais estão concentrados em "${topCategory.name}".`);
+    for (const { threshold, score, description, emoji } of HEALTH_SCORE_BOUNDARIES) {
+        if (savingsRatio >= threshold) {
+            return { score, description, emoji };
         }
-        
-        opportunities.push(`Sua maior despesa este mês foi com "${topCategory.name}". Avalie esses gastos para encontrar possíveis economias.`);
-    }
-
-    if (transactions.length < 15) {
-        opportunities.push("Continue adicionando suas transações para receber insights cada vez mais precisos sobre seus hábitos financeiros.");
-    } else {
-         opportunities.push("Considere criar metas de orçamento para suas principais categorias de despesa para ter um controle ainda maior.");
     }
     
-    const savings = monthlyIncome - monthlyExpenses;
-    if (savings > 0 && monthlyIncome > 0) {
-        const savingRate = (savings / monthlyIncome) * 100;
-        opportunities.push(`Você economizou ${savingRate.toFixed(0)}% da sua renda este mês. Parabéns!`);
-    }
-
-    if (savings < 0 || monthlyExpenses > monthlyIncome * 0.8) {
-      investmentIdeas.push("Seu foco principal deve ser criar ou fortalecer sua reserva de emergência. Tente guardar o equivalente a 3-6 meses de suas despesas.");
-      investmentIdeas.push("Para a reserva de emergência, estude investimentos de baixíssimo risco com liquidez diária, como Tesouro Selic ou CDBs de grandes bancos.");
-    } else {
-      investmentIdeas.push("Com as contas sob controle, você pode começar a diversificar. Estude sobre fundos de investimento ou ETFs que replicam índices da bolsa.");
-      investmentIdeas.push("Considere definir metas de longo prazo (aposentadoria, compra de imóvel) e pesquisar investimentos que se alinhem a esses objetivos.");
-    }
-
-    if (warnings.length === 0) {
-        warnings.push("Nenhum alerta crítico este mês. Excelente controle financeiro!");
-    }
-
-    return { warnings, opportunities, investmentIdeas };
-}
-
-export type FinancialHealth = {
-    score: number;
-    description: string;
-    emoji: string;
-}
-
-export function calculateFinancialHealthScore(transactions: Transaction[]): FinancialHealth {
-    let score = 0;
-    const { monthlyIncome, monthlyExpenses } = calculateMetrics(transactions);
-
-    // 1. Savings Rate (50 points)
-    if (monthlyIncome > 0) {
-        const savingsRate = (monthlyIncome - monthlyExpenses) / monthlyIncome;
-        if (savingsRate >= 0.3) score += 50; // saving 30% or more
-        else if (savingsRate >= 0.1) score += 30; // saving 10%-30%
-        else if (savingsRate > 0) score += 15; // saving something
-    }
-
-    // 2. Expense Control (30 points)
-    const { lastMonthExpenses } = calculateMetrics(transactions);
-    if (lastMonthExpenses > 0) {
-      if (monthlyExpenses <= lastMonthExpenses) score += 30;
-      else if (monthlyExpenses <= lastMonthExpenses * 1.1) score += 15; // increased by less than 10%
-    } else {
-      score += 15; // No historical data, give half points
-    }
-
-    // 3. Transaction consistency (20 points)
-    if (transactions.length > 20) score += 20;
-    else if (transactions.length > 10) score += 10;
-    else if (transactions.length > 5) score += 5;
-    
-    score = Math.round(score);
-
-    if (score >= 80) return { score, description: "Excelente", emoji: "🏆" };
-    if (score >= 60) return { score, description: "Bom", emoji: "👍" };
-    if (score >= 40) return { score, description: "Regular", emoji: "😐" };
-    return { score, description: "Precisa de Atenção", emoji: "😟" };
+    return defaultHealth;
 }

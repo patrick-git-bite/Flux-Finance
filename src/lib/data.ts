@@ -7,6 +7,7 @@ export type Transaction = {
   amount: number;
   type: 'income' | 'expense';
   categoryId: string;
+  expenseType?: 'fixed' | 'variable';
 };
 
 export type Category = {
@@ -16,7 +17,7 @@ export type Category = {
 };
 
 export const initialCategories: Category[] = [
-  { id: 'cat_1', name: 'Salário', icon: 'Landmark' },
+  { id: 'cat_1', name: 'Renda', icon: 'Landmark' },
   { id: 'cat_2', name: 'Compras', icon: 'ShoppingCart' },
   { id: 'cat_3', name: 'Moradia', icon: 'Home' },
   { id: 'cat_4', name: 'Transporte', icon: 'Car' },
@@ -43,6 +44,7 @@ export const initialTransactions: Transaction[] = [
     amount: 150.75,
     type: 'expense',
     categoryId: 'cat_2',
+    expenseType: 'variable',
   },
   {
     id: 'txn_3',
@@ -51,6 +53,7 @@ export const initialTransactions: Transaction[] = [
     amount: 1200,
     type: 'expense',
     categoryId: 'cat_3',
+    expenseType: 'fixed',
   },
   {
     id: 'txn_4',
@@ -59,6 +62,7 @@ export const initialTransactions: Transaction[] = [
     amount: 55.3,
     type: 'expense',
     categoryId: 'cat_4',
+    expenseType: 'variable',
   },
   {
     id: 'txn_5',
@@ -67,5 +71,6 @@ export const initialTransactions: Transaction[] = [
     amount: 30,
     type: 'expense',
     categoryId: 'cat_5',
+    expenseType: 'variable',
   },
 ];

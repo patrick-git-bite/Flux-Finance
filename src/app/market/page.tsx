@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Transaction } from '@/lib/data';
 import { calculateMetrics } from '@/lib/financials';
@@ -37,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { InvestmentPlatforms } from '@/components/market/investment-platforms';
 
 // Dados estáticos de exemplo
 const indicators = {
@@ -245,14 +246,19 @@ export default function MarketPage() {
     setDataLoading(true);
 
     const transactionsQuery = query(
-      collection(db, 'users', user.uid, 'transactions')
+      collection(db, 'users', user.uid, 'transactions'),
+      orderBy('date', 'desc')
     );
     const unsubTransactions = onSnapshot(transactionsQuery, (snapshot) => {
-      setTransactions(
-        snapshot.docs.map(
-          (doc) => ({ id: doc.id, ...doc.data() } as Transaction)
-        )
-      );
+      const userTransactions = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          date: data.date && data.date.toDate ? data.date.toDate() : new Date(data.date),
+        } as Transaction;
+      });
+      setTransactions(userTransactions);
       setDataLoading(false);
     });
 
@@ -264,7 +270,8 @@ export default function MarketPage() {
   const lastCdi = indicators.cdi.data[indicators.cdi.data.length - 1].rate;
   const realInterestRate = lastSelic - lastIpca;
 
-  const { balance } = calculateMetrics(transactions);
+  const referenceDate = transactions.length > 0 ? transactions[0].date : new Date();
+  const { balance } = calculateMetrics(transactions, referenceDate);
 
   return (
     <AppLayout title="Painel do Mercado">
@@ -478,6 +485,7 @@ export default function MarketPage() {
                 )}
             </CardContent>
         </Card>
+        <InvestmentPlatforms />
       </div>
     </AppLayout>
   );

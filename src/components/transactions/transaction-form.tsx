@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -42,11 +44,20 @@ const formSchema = z.object({
   amount: z.coerce.number().positive('O valor deve ser positivo.'),
   categoryId: z.string().min(1, 'Por favor, selecione uma categoria.'),
   description: z.string().min(2, 'A descrição é muito curta.'),
+  expenseType: z.enum(['fixed', 'variable']).optional(),
+  isInstallment: z.boolean().default(false),
+  installments: z.coerce.number().optional(),
+}).refine(data => data.type === 'income' || (data.type === 'expense' && data.expenseType), {
+  message: "O tipo de despesa é obrigatório para despesas.",
+  path: ["expenseType"],
+}).refine(data => !data.isInstallment || (data.installments && data.installments > 1), {
+  message: "Número de parcelas deve ser maior que 1.",
+  path: ["installments"],
 });
 
 type TransactionFormProps = {
   categories: Category[];
-  onSubmit: (data: Omit<Transaction, 'id'>) => void;
+  onSubmit: (data: Omit<Transaction, 'id'> & { isInstallment?: boolean, installments?: number }) => void;
   defaultValues?: Partial<Omit<Transaction, 'id'> & { date: Date | string }>;
 };
 
@@ -64,8 +75,14 @@ export function TransactionForm({
       amount: defaultValues?.amount ?? '',
       categoryId: defaultValues?.categoryId || '',
       description: defaultValues?.description || '',
+      expenseType: defaultValues?.expenseType || undefined,
+      isInstallment: false,
+      installments: undefined,
     },
   });
+
+  const transactionType = form.watch('type');
+  const isInstallment = form.watch('isInstallment');
 
   const handleUpdateWithDateConversion = (values: z.infer<typeof formSchema>) => {
     const dataToSubmit = {
@@ -109,13 +126,81 @@ export function TransactionForm({
           )}
         />
 
+        {transactionType === 'expense' && (
+           <div className="space-y-4">
+            <FormField
+                control={form.control}
+                name="expenseType"
+                render={({ field }) => (
+                <FormItem className="space-y-3">
+                    <FormLabel>Tipo de Despesa</FormLabel>
+                    <FormControl>
+                    <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex space-x-4"
+                    >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl><RadioGroupItem value="variable" /></FormControl>
+                        <FormLabel className="font-normal">Variável</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl><RadioGroupItem value="fixed" /></FormControl>
+                        <FormLabel className="font-normal">Fixa</FormLabel>
+                        </FormItem>
+                    </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+              control={form.control}
+              name="isInstallment"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      É uma compra parcelada?
+                    </FormLabel>
+                    <FormDescription>
+                      Selecione se esta despesa será paga em várias parcelas.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+            {isInstallment && (
+              <FormField
+                control={form.control}
+                name="installments"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de Parcelas</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="12" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Data</FormLabel>
+                <FormLabel>Data da Primeira Parcela</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -140,9 +225,6 @@ export function TransactionForm({
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date('1900-01-01')
-                      }
                       initialFocus
                       locale={ptBR}
                     />
@@ -157,9 +239,9 @@ export function TransactionForm({
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Valor</FormLabel>
+                <FormLabel>Valor da Parcela</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="0,00" {...field} />
+                  <Input type="number" placeholder="150,50" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -174,7 +256,7 @@ export function TransactionForm({
               <FormLabel>Descrição</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="ex: Café com amigos"
+                  placeholder="ex: Assinatura de Streaming"
                   {...field}
                 />
               </FormControl>

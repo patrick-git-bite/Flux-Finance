@@ -3,77 +3,76 @@
 import { Table } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Upload } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Upload, X } from 'lucide-react';
 import { Category, Transaction } from '@/lib/data';
-import { CategoryIcon, getIconForCategory } from '@/lib/icons';
+import { getIconForCategory } from '@/lib/icons';
 import { exportToCSV } from '@/lib/csv';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { TransactionForm } from './transaction-form';
-import { useState } from 'react';
+import { DataTableFacetedFilter } from './data-table-faceted-filter';
+import { NewTransactionSheet } from './new-transaction-sheet';
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   categories: Category[];
-  onAdd: (data: Omit<Transaction, 'id'|'date'> & { date: Date }) => void;
+  onAdd: (data: Omit<Transaction, 'id'> | Omit<Transaction, 'id'>[]) => void;
 }
 
-export function DataTableToolbar<TData>({
+/**
+ * The toolbar for the transactions data table.
+ * It includes input filters, faceted filters for type and category,
+ * a reset button, and controls for exporting and adding new transactions.
+ */
+export function DataTableToolbar<TData>({ 
   table,
   categories,
   onAdd
 }: DataTableToolbarProps<TData>) {
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const handleAdd = (data: Omit<Transaction, 'id' | 'date'> & { date: Date }) => {
-    onAdd(data);
-    setIsSheetOpen(false);
-  }
-  
+  const isFiltered = table.getState().columnFilters.length > 0;
+
+  const transactionTypes = [
+    { value: 'income', label: 'Renda' },
+    { value: 'expense', label: 'Despesa' },
+  ];
+
+  const categoryOptions = categories.map(cat => ({
+    value: cat.id,
+    label: cat.name,
+    icon: getIconForCategory(cat.icon),
+  }));
+
   return (
     <div className="flex items-center justify-between gap-2">
-      <div className="flex flex-1 items-center gap-2">
+      <div className="flex flex-1 flex-col sm:flex-row items-start sm:items-center gap-2">
         <Input
-          placeholder="Filtrar transações..."
+          placeholder="Filtrar por descrição..."
           value={(table.getColumn('description')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
             table.getColumn('description')?.setFilterValue(event.target.value)
           }
-          className="max-w-sm"
+          className="h-9 w-full sm:max-w-xs"
         />
-        <Select
-          onValueChange={(value) => {
-            if (value === 'all') {
-               table.getColumn('categoryId')?.setFilterValue(undefined);
-            } else {
-               table.getColumn('categoryId')?.setFilterValue([value]);
-            }
-          }}
-        >
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Todas as Categorias" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Categorias</SelectItem>
-            {categories.map((category) => {
-              const Icon = getIconForCategory(category.icon);
-              return (
-                <SelectItem key={category.id} value={category.id}>
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
-                    {category.name}
-                  </div>
-                </SelectItem>
-              )
-            })}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+            <DataTableFacetedFilter 
+                column={table.getColumn('type')}
+                title="Tipo"
+                options={transactionTypes}
+            />
+            <DataTableFacetedFilter
+                column={table.getColumn('categoryId')}
+                title="Categoria"
+                options={categoryOptions}
+            />
+        </div>
+        {isFiltered && (
+            <Button
+                variant="ghost"
+                onClick={() => table.resetColumnFilters()}
+                className="h-9 px-2 lg:px-3"
+            >
+                Limpar filtros
+                <X className="ml-2 h-4 w-4" />
+            </Button>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <Button
@@ -84,20 +83,7 @@ export function DataTableToolbar<TData>({
           <Upload className="mr-2 h-4 w-4" />
           Exportar CSV
         </Button>
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetTrigger asChild>
-            <Button size="sm">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Transação
-            </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Adicionar Nova Transação</SheetTitle>
-            </SheetHeader>
-            <TransactionForm categories={categories} onSubmit={handleAdd} />
-          </SheetContent>
-        </Sheet>
+        <NewTransactionSheet categories={categories} onAdd={onAdd} />
       </div>
     </div>
   );

@@ -24,7 +24,10 @@ import * as z from 'zod';
 import { CandlestickChart, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useState } from 'react';
 
@@ -62,6 +65,38 @@ export default function LoginPage() {
         title: 'Falha no login',
         description:
           'Email ou senha inválidos. Por favor, tente novamente.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    const email = form.getValues('email');
+    if (!email) {
+      form.trigger('email');
+      toast({
+        variant: 'destructive',
+        title: 'Campo obrigatório',
+        description: 'Por favor, insira seu email para redefinir a senha.',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: 'Email enviado!',
+        description: 'Verifique sua caixa de entrada para redefinir a senha.',
+      });
+    } catch (error: any) {
+      console.error('Erro ao enviar email de redefinição:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Falha ao enviar email',
+        description:
+          'Não foi possível enviar o email de redefinição. Verifique o email inserido.',
       });
     } finally {
       setIsLoading(false);
@@ -108,7 +143,18 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Senha</FormLabel>
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto p-0 text-xs"
+                        onClick={handlePasswordReset}
+                        disabled={isLoading}
+                      >
+                        Esqueceu sua senha?
+                      </Button>
+                    </div>
                     <FormControl>
                       <Input
                         type="password"

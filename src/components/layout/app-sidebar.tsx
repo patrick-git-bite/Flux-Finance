@@ -20,18 +20,44 @@ import {
   ArrowRightLeft,
   Lightbulb,
   LineChart,
+  ShieldCheck,
 } from 'lucide-react';
 import { UserNav } from './user-nav';
+import { useAuth } from '@/hooks/use-auth';
 
-const menuItems = [
+const baseMenuItems = [
   { href: '/', label: 'Painel', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transações', icon: ArrowRightLeft },
   { href: '/insights', label: 'Insights', icon: Lightbulb },
   { href: '/market', label: 'Mercado', icon: LineChart },
 ];
 
+const adminMenuItem = {
+  href: '/admin',
+  label: 'Painel Admin',
+  icon: ShieldCheck,
+};
+
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const [menuItems, setMenuItems] = React.useState(baseMenuItems);
+
+  React.useEffect(() => {
+    if (!user) {
+      setMenuItems(baseMenuItems);
+      return;
+    }
+
+    user.getIdTokenResult().then((idTokenResult) => {
+      const isAdmin = !!idTokenResult.claims.admin;
+      const currentMenuItems = [...baseMenuItems];
+      if (isAdmin) {
+        currentMenuItems.push(adminMenuItem);
+      }
+      setMenuItems(currentMenuItems);
+    });
+  }, [user]);
 
   return (
     <Sidebar>

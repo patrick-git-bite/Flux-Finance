@@ -22,9 +22,9 @@ import {
   query,
   orderBy,
   writeBatch,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
+import { addMonths } from 'date-fns';
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
@@ -77,21 +77,47 @@ export default function TransactionsPage() {
     };
   }, [user, authLoading, toast]);
 
-  const handleAddTransaction = async (newTransaction: Omit<Transaction, 'id'>) => {
+  const handleAddTransaction = async (newTransaction: Omit<Transaction, 'id'> & { isInstallment?: boolean, installments?: number }) => {
     if (!user) return;
     try {
-      const date = newTransaction.date instanceof Date 
-        ? newTransaction.date 
-        : new Date(newTransaction.date);
+      const { isInstallment, installments, ...transactionData } = newTransaction;
 
-      await addDoc(
-        collection(db, 'users', user.uid, 'transactions'),
-        {...newTransaction, date}
-      );
-      toast({
-        title: 'Transação Adicionada',
-        description: 'Sua nova transação foi registrada com sucesso.',
-      });
+      if (isInstallment && installments && installments > 1) {
+        const batch = writeBatch(db);
+        const baseDate = new Date(transactionData.date);
+        const totalAmount = transactionData.amount;
+        const perInstallmentAmount = parseFloat((totalAmount / installments).toFixed(2));
+
+        for (let i = 0; i < installments; i++) {
+          const installmentDate = addMonths(baseDate, i);
+          const newDocRef = doc(collection(db, 'users', user.uid, 'transactions'));
+          batch.set(newDocRef, {
+            ...transactionData,
+            amount: perInstallmentAmount,
+            date: installmentDate,
+            description: `${transactionData.description} (${i + 1}/${installments})`,
+          });
+        }
+        await batch.commit();
+        toast({
+          title: 'Transações Parceladas Adicionadas',
+          description: `${installments} transações foram registradas com sucesso.`,
+        });
+
+      } else {
+        const date = transactionData.date instanceof Date 
+          ? transactionData.date 
+          : new Date(transactionData.date);
+
+        await addDoc(
+          collection(db, 'users', user.uid, 'transactions'),
+          {...transactionData, date}
+        );
+        toast({
+          title: 'Transação Adicionada',
+          description: 'Sua nova transação foi registrada com sucesso.',
+        });
+      }
     } catch (error) {
       console.error('Error adding transaction: ', error);
       toast({

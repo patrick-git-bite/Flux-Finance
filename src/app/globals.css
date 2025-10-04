@@ -24,12 +24,24 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --chart-1: 145 63% 46%;
-    --chart-2: 0 84% 60%;
-    --chart-3: 221 83% 58%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    
+    /* Original Chart Colors */
+    --chart-1: 145 63% 46%; /* Green */
+    --chart-2: 0 84% 60%;   /* Red */
+    --chart-3: 221 83% 58%; /* Blue */
+    --chart-4: 43 74% 66%;  /* Yellow */
+    --chart-5: 27 87% 67%;  /* Orange */
+
+    /* New Fixed Expense Colors (Yellow/Orange Tones) */
+    --chart-fixed-1: 43 74% 66%;  /* Yellow */
+    --chart-fixed-2: 35 88% 67%;  /* Lighter Orange */
+    --chart-fixed-3: 27 87% 67%;  /* Orange */
+
+    /* New Variable Expense Colors (Red Tones) */
+    --chart-variable-1: 0 84% 60%;   /* Red */
+    --chart-variable-2: 0 90% 75%;   /* Lighter Red */
+    --chart-variable-3: 350 87% 70%; /* Pinkish Red */
   }
   .dark {
     --background: 222 47% 11%;
@@ -52,11 +64,23 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 217.2 91.2% 59.8%;
+
+    /* Original Chart Colors */
     --chart-1: 145 63% 46%;
     --chart-2: 0 72% 51%;
     --chart-3: 217 91% 60%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* New Fixed Expense Colors (Yellow/Orange Tones) */
+    --chart-fixed-1: 43 74% 66%;
+    --chart-fixed-2: 35 88% 67%;
+    --chart-fixed-3: 27 87% 67%;
+
+    /* New Variable Expense Colors (Red Tones) */
+    --chart-variable-1: 0 72% 51%;
+    --chart-variable-2: 0 80% 65%;
+    --chart-variable-3: 350 77% 60%;
   }
 }
 
